@@ -13,6 +13,8 @@
   function Slider(newSlider, sliderSize, slideSize, animationDuration, autoplayInterval) {
     (this.startSetup = new startSetup(sliderSize, slideSize, animationDuration, autoplayInterval)), (this.wrapper = newSlider.querySelector(".wrapper"));
 
+    this.slider = newSlider;
+
     this.slides = newSlider.querySelectorAll(".circular-slider .wrapper .slides-holder .slides-holder__item");
     this.descriptionsHolder = newSlider.querySelector(".circular-slider .wrapper .descriptions");
     this.descriptions = newSlider.querySelectorAll(".circular-slider .wrapper .descriptions .descriptions__item");
@@ -20,13 +22,6 @@
     this.btnLeft = newSlider.querySelector(".circular-slider .wrapper .controls .controls__left");
     this.btnRight = newSlider.querySelector(".circular-slider .wrapper .controls .controls__right");
     this.btnAutoplay = newSlider.querySelector(".circular-slider .wrapper .controls .controls__autoplay");
-
-    this.slidesSize = 0;
-    this.currentAngle = 0;
-    this.stepAngle = (2 * Math.PI) / this.slides.length;
-    this.currentSlide = 0;
-    this.isAnimating = false;
-    this.slidesHolder.style.transitionDuration = this.startSetup.animationDuration + "ms";
 
     this.onResize();
     this.setAutoplay();
@@ -40,12 +35,41 @@
   };
 
   Slider.prototype.init = function () {
+    this.isAnimating = false;
+    this.slidesHolder.style.transitionDuration = this.startSetup.animationDuration + "ms";
     this.initClickFeature();
     // this.initDragFeature();
     this.initAutoplay();
   };
 
-  Slider.prototype.onResize = function () {
+  Slider.prototype.onResize = function (windowResized = false) {
+    this.slidesSize = 0;
+    this.currentSlide = 0;
+    this.currentAngle = 0;
+
+    if (this.isDesktop()) {
+      this.slides = this.slider.querySelectorAll(".circular-slider .wrapper .slides-holder .slides-holder__item");
+      this.slider.querySelectorAll(".circular-slider .wrapper .slides-holder .slides-holder__item[data-item='mobile']").forEach((el) => (el.style.display = "block"));
+    } else {
+      this.slides = this.slider.querySelectorAll(".circular-slider .wrapper .slides-holder .slides-holder__item:not([data-item='mobile'])");
+      this.slider.querySelectorAll(".circular-slider .wrapper .slides-holder .slides-holder__item[data-item='mobile']").forEach((el) => (el.style.display = "none"));
+    }
+
+    this.stepAngle = (2 * Math.PI) / this.slides.length;
+
+    // add active class to first element
+    this.slider.querySelector(".slides-holder__item_active").classList.remove("slides-holder__item_active");
+    this.slider.querySelector(".descriptions__item_visible").classList.remove("descriptions__item_visible");
+
+    this.slides[0].classList.add("slides-holder__item_active");
+    this.descriptions[0].classList.add("descriptions__item_visible");
+
+    if (windowResized) {
+      this.slidesHolder.removeAttribute("style");
+
+      this.init();
+    }
+
     let radius,
       w = this.wrapper.parentNode.getBoundingClientRect().width,
       h = this.wrapper.parentNode.getBoundingClientRect().height;
@@ -63,10 +87,10 @@
     // this.wrapper.style.height = (radius / 0.45) + "px";
 
     let r = 2 * radius * (1 - this.startSetup.slideSize);
-    this.slidesHolder.style.width = this.slidesHolder.style.height = r + "px";
-    this.slidesRepositioning(r / 2);
+    this.slidesHolder.style.width = this.slidesHolder.style.height = r / (this.isDesktop() ? 1 : 2) + "px";
+    this.slidesRepositioning(r / (this.isDesktop() ? 2 : 4));
 
-    this.slidesHolder.style.marginTop = -(radius * (this.startSetup.slideSize * (10 + Math.floor(this.slides.length / this.isDesktop() ? 3 : 2)))) + "px";
+    this.slidesHolder.style.marginTop = this.isDesktop() ? -(radius * (this.startSetup.slideSize * 10)) + "px" : 0;
 
     this.descriptionsHolder.style.width = (r / 2 - r * this.startSetup.slideSize + 20) * 2 + "px";
     this.descriptionsHolder.style.height = r / 2 - r * this.startSetup.slideSize + 20 + "px";
@@ -331,7 +355,7 @@
   };
 
   ///////////Init sliders///////////
-  window.circularSlider1 = new Slider(document.querySelector(".circular-slider-1"), 100, 10, 500, 3000);
+  window.circularSlider1 = new Slider(document.querySelector(".circular-slider-1"), 100, 12, 500, 3000);
   // window.circularSlider2 = new Slider(document.querySelector(".circular-slider-2"), 90, 13, 700, 3000);
   //   window.circularSlider3 = new Slider(document.querySelector(".circular-slider-3"), 80, 18, 800, 3700);
   //   window.circularSlider4 = new Slider(document.querySelector(".circular-slider-4"), 70, 20, 900, 4200);
@@ -341,7 +365,7 @@
   window.onresize = function () {
     for (let i = 0; i < sliders.length; i++) {
       sliders[i].resetNavs();
-      sliders[i].onResize();
+      sliders[i].onResize(true);
     }
   };
   //////////////////////
